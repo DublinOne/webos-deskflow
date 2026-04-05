@@ -16,6 +16,7 @@ export const AIAssistant: React.FC<{ window: WindowState }> = () => {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [streamingContent, setStreamingContent] = useState('');
+  const abortControllerRef = useRef<AbortController | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -32,6 +33,9 @@ export const AIAssistant: React.FC<{ window: WindowState }> = () => {
     setInput('');
     setIsLoading(true);
     setStreamingContent('');
+
+    const abortController = new AbortController();
+    abortControllerRef.current = abortController;
 
     try {
       const chatHistory = messages.map(m => ({
@@ -52,6 +56,7 @@ export const AIAssistant: React.FC<{ window: WindowState }> = () => {
             ...chatHistory
           ],
           search: true, // Enable web search for real-time info
+          signal: abortController.signal
         },
         (chunk) => {
           setStreamingContent(prev => prev + chunk);
@@ -66,13 +71,29 @@ export const AIAssistant: React.FC<{ window: WindowState }> = () => {
         return '';
       });
     } catch (error: any) {
-      console.error('AI Error:', error);
-      setMessages(prev => [...prev, { 
-        role: 'assistant', 
-        content: "I'm sorry, I encountered an error. Please make sure you are logged in to use the AI features." 
-      }]);
+      if (error.name === 'AbortError') {
+        setStreamingContent(prev => {
+          if (prev) {
+            setMessages(msgs => [...msgs, { role: 'assistant', content: prev + ' [Stopped]' }]);
+          }
+          return '';
+        });
+      } else {
+        console.error('AI Error:', error);
+        setMessages(prev => [...prev, { 
+          role: 'assistant', 
+          content: "I'm sorry, I encountered an error. Please make sure you are logged in to use the AI features." 
+        }]);
+      }
     } finally {
       setIsLoading(false);
+      abortControllerRef.current = null;
+    }
+  };
+
+  const handleStop = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
     }
   };
 
@@ -91,9 +112,20 @@ export const AIAssistant: React.FC<{ window: WindowState }> = () => {
           <Bot size={18} className="text-primary" />
           <span className="text-sm font-semibold">DeskFlow AI</span>
         </div>
-        <div className="flex items-center gap-2 opacity-50 text-[10px] uppercase tracking-widest font-bold">
-          <Sparkles size={12} />
-          Blink Powered
+        <div className="flex items-center gap-2">
+          {isLoading && (
+            <button
+              onClick={handleStop}
+              className="flex items-center gap-1.5 px-2 py-1 bg-red-500/20 text-red-400 hover:bg-red-500/30 rounded text-[10px] font-bold uppercase tracking-wider transition-colors"
+            >
+              <div className="w-2 h-2 bg-red-400 rounded-sm" />
+              Stop
+            </button>
+          )}
+          <div className="flex items-center gap-2 opacity-50 text-[10px] uppercase tracking-widest font-bold">
+            <Sparkles size={12} />
+            Blink Powered
+          </div>
         </div>
       </div>
 
