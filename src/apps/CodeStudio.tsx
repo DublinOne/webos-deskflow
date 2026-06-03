@@ -4,7 +4,7 @@ import { cn } from '@blinkdotnew/ui';
 import { Code, Play, Layout, FileCode, RefreshCw, Eye, EyeOff, Save } from 'lucide-react';
 
 export const CodeStudio: React.FC<{ window: WindowState }> = () => {
-  const initialCode = `<!DOCTYPE html>
+  const [code, setCode] = useState(`<!DOCTYPE html>
 <html>
 <head>
   <style>
@@ -50,9 +50,8 @@ export const CodeStudio: React.FC<{ window: WindowState }> = () => {
     <button class="btn" onclick="alert('Hello from Code Studio!')">Click Me</button>
   </div>
 </body>
-</html>`;
-
-  const [code, setCode] = useState(() => localStorage.getItem('codestudio_code') || initialCode);
+</html>`);
+  
   const [preview, setPreview] = useState('');
   const [showPreview, setShowPreview] = useState(true);
   const [activeTab, setActiveTab] = useState('html');
@@ -74,14 +73,7 @@ export const CodeStudio: React.FC<{ window: WindowState }> = () => {
         doc.close();
       }
     }
-    localStorage.setItem('codestudio_code', code);
-  }, [code, showPreview, preview]);
-
-  const handleReset = () => {
-    if (confirm('Reset code to default?')) {
-      setCode(initialCode);
-    }
-  };
+  }, [preview, showPreview]);
 
   return (
     <div className="flex flex-col h-full bg-secondary/30 rounded-b-xl overflow-hidden backdrop-blur-md">
@@ -103,7 +95,7 @@ export const CodeStudio: React.FC<{ window: WindowState }> = () => {
                 showPreview ? "bg-white/10 text-primary shadow-sm" : "text-muted-foreground hover:text-foreground"
               )}
              >
-               Split
+               Preview
              </button>
              <button 
               onClick={() => setShowPreview(false)}
@@ -112,18 +104,15 @@ export const CodeStudio: React.FC<{ window: WindowState }> = () => {
                 !showPreview ? "bg-white/10 text-primary shadow-sm" : "text-muted-foreground hover:text-foreground"
               )}
              >
-               Code
+               Code Only
              </button>
            </div>
         </div>
 
         <div className="flex items-center gap-2">
-           <button 
-            onClick={handleReset}
-            className="flex items-center gap-1.5 px-3 py-1.5 hover:bg-white/5 rounded-lg text-xs font-medium transition-all"
-           >
-             <RefreshCw size={14} className="opacity-70" />
-             Reset
+           <button className="flex items-center gap-1.5 px-3 py-1.5 hover:bg-white/5 rounded-lg text-xs font-medium transition-all">
+             <Save size={14} className="opacity-70" />
+             Save
            </button>
            <button 
             onClick={() => setPreview(code)}
